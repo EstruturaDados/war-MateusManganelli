@@ -1,9 +1,9 @@
 #include <stdio.h>
-#include <string.h> // Necessário para a função strcspn
+#include <stdlib.h> // Para calloc, free, rand, srand
+#include <string.h> // Para strcspn, strcpy
+#include <time.h>   // Para srand(time(NULL))
 
-// 💡 Conceito: struct
-// Uma struct é um tipo de dado que agrupa diferentes
-// variáveis sob um único nome.
+// mateusConceito: A struct permanece a mesma
 struct Territorio {
     char nome[50];
     char cor[30];
@@ -13,81 +13,210 @@ struct Territorio {
 // -----------------------------------------------------------------
 // FUNÇÃO AUXILIAR: Limpar o "buffer" do teclado
 // -----------------------------------------------------------------
-// Por que isso é necessário?
-// Quando você digita um número com scanf (ex: "5" e aperta ENTER),
-// o scanf() lê o "5", mas deixa o "ENTER" (o caractere '\n')
-// na fila de entrada.
-// A próxima função fgets() veria esse "ENTER" e pensaria que
-// você digitou uma string vazia.
-// Esta função consome todos os caracteres restantes até o ENTER.
-// -----------------------------------------------------------------
 void limpar_buffer_teclado() {
     int c;
     while ((c = getchar()) != '\n' && c != EOF);
 }
 
 // -----------------------------------------------------------------
-// FUNÇÃO PRINCIPAL
+// FUNÇÃO NOVA: Exibir o estado atual do mapa
 // -----------------------------------------------------------------
-int main() {
-    // 💡 Conceito: Vetor Estático
-    // Criamos um vetor (array) de 5 posições.
-    // Cada posição armazena UMA struct Territorio completa.
-    const int NUM_TERRITORIOS = 5;
-    struct Territorio mapa[NUM_TERRITORIOS];
+// (Modularizando o que estava no main do Nível Novato)
+// Conceito: Ponteiros
+// Recebemos 'mapa' como um ponteiro para a struct.
+// -----------------------------------------------------------------
+void exibir_mapa(struct Territorio *mapa, int num_territorios) {
+    printf("\n\n===========================================================\n");
+    printf("              🗺️  ESTADO ATUAL DO MAPA 🗺️\n");
+    printf("===========================================================\n");
+    printf("%-5s | %-20s | %-15s | %s\n", "ID", "Território", "Cor do Exército", "Tropas");
+    printf("-----------------------------------------------------------\n");
 
-    printf("--- 🗺️ Cadastro Inicial de Territórios (WAR) ---\n");
-    printf("Por favor, insira os dados para os %d territórios.\n", NUM_TERRITORIOS);
-
-    // --- 1. LEITURA DE DADOS (CADASTRO) ---
-    for (int i = 0; i < NUM_TERRITORIOS; i++) {
-        printf("\n--- Território %d ---\n", i + 1);
-
-        // 💡 Conceito: Leitura com fgets
-        // Usamos fgets para ler strings que podem conter espaços.
-        
-        // Leitura do NOME
-        printf("Digite o nome: ");
-        fgets(mapa[i].nome, 50, stdin);
-        // fgets() armazena o "ENTER" ('\n') no final da string.
-        // A linha abaixo remove esse '\n' para a impressão ficar correta.
-        mapa[i].nome[strcspn(mapa[i].nome, "\n")] = '\0';
-
-        // Leitura da COR
-        printf("Digite a cor do exército: ");
-        fgets(mapa[i].cor, 30, stdin);
-        mapa[i].cor[strcspn(mapa[i].cor, "\n")] = '\0';
-
-        // 💡 Conceito: Leitura com scanf
-        // Usamos scanf para ler um valor numérico (int).
-        printf("Digite o número de tropas: ");
-        scanf("%d", &mapa[i].tropas);
-
-        // ❗️ PONTO CRÍTICO ❗️
-        // Limpamos o buffer DEPOIS do scanf, para que o "ENTER"
-        // que o usuário apertou não atrapalhe o próximo fgets()
-        // na próxima volta do loop.
-        limpar_buffer_teclado();
-    }
-
-    // --- 2. EXIBIÇÃO DO MAPA (SAÍDA) ---
-    printf("\n\n=======================================================\n");
-    printf("            🗺️  ESTADO ATUAL DO MAPA 🗺️\n");
-    printf("=======================================================\n");
-
-    // Imprime um cabeçalho formatado
-    // "%-20s" significa: alinhe o texto (string) à ESQUERDA (-) em 20 espaços.
-    printf("%-20s | %-15s | %s\n", "Território", "Cor do Exército", "Tropas");
-    printf("-------------------------------------------------------\n");
-
-    // Loop para imprimir cada território cadastrado
-    for (int i = 0; i < NUM_TERRITORIOS; i++) {
-        printf("%-20s | %-15s | %d\n",
+    for (int i = 0; i < num_territorios; i++) {
+        // Usamos (i+1) para exibir um ID amigável (1-5)
+        printf("(%d)   | %-20s | %-15s | %d\n",
+               i + 1,
                mapa[i].nome,
                mapa[i].cor,
                mapa[i].tropas);
     }
-    printf("-------------------------------------------------------\n");
+    printf("-----------------------------------------------------------\n");
+}
+
+// -----------------------------------------------------------------
+// FUNÇÃO NOVA: Simulação de Batalha
+// -----------------------------------------------------------------
+//  Conceito: Números Aleatórios (rand)
+// -----------------------------------------------------------------
+void batalhar(struct Territorio *mapa, int id_atacante, int id_defensor) {
+    // Conceito: rand()
+    // (rand() % 6) gera um número de 0 a 5.
+    // Somamos 1 para simular um dado (1 a 6).
+    int dado_ataque = (rand() % 6) + 1;
+    int dado_defesa = (rand() % 6) + 1;
+
+    struct Territorio *atacante = &mapa[id_atacante];
+    struct Territorio *defensor = &mapa[id_defensor];
+
+    printf("\n⚔️  BATALHA: %s (%s) ataca %s (%s)!\n",
+           atacante->nome, atacante->cor,
+           defensor->nome, defensor->cor);
+    
+    printf("   Dado de Ataque: %d\n", dado_ataque);
+    printf("   Dado de Defesa: %d\n", dado_defesa);
+
+    // Lógica da Batalha (Empate favorece o atacante, conforme solicitado)
+    if (dado_ataque >= dado_defesa) {
+        printf("   VITÓRIA DO ATAQUE! O defensor (%s) perde 1 tropa.\n", defensor->nome);
+        defensor->tropas--;
+
+        // Verificar conquista
+        if (defensor->tropas == 0) {
+            printf("   🚩 CONQUISTA! %s foi dominado pelo exército %s!\n",
+                   defensor->nome, atacante->cor);
+            
+            // 1. Território conquistado passa a ter a cor do atacante
+            strcpy(defensor->cor, atacante->cor);
+            
+            // 2. O atacante move 1 tropa para ocupar o território
+            defensor->tropas = 1;
+            
+            // 3. O território de origem perde essa 1 tropa
+            atacante->tropas--;
+        }
+    } else {
+        printf("   VITÓRIA DA DEFESA! O ataque falhou.\n");
+        // (De acordo com a regra, o atacante não perde tropas ao falhar)
+    }
+}
+
+// -----------------------------------------------------------------
+// FUNÇÃO PRINCIPAL
+// -----------------------------------------------------------------
+int main() {
+    const int NUM_TERRITORIOS = 5;
+
+    // Conceito: Ponteiros
+    // 'mapa' agora é um ponteiro, que apontará para o
+    // bloco de memória que vamos alocar.
+    struct Territorio *mapa;
+
+    // Conceito: calloc (Alocação Dinâmica)
+    // calloc(N, TAMANHO)
+    // Aloca memória para 'N' elementos do tamanho 'TAMANHO'
+    // e inicializa todos os bytes com 0.
+    mapa = (struct Territorio *)calloc(NUM_TERRITORIOS, sizeof(struct Territorio));
+
+    // Boa prática: sempre verificar se a alocação funcionou
+    if (mapa == NULL) {
+        printf("Erro crítico: Falha ao alocar memória!\n");
+        return 1; // Encerra o programa com código de erro
+    }
+    
+    // Conceito: srand()
+    // Inicializa a semente do gerador de números aleatórios.
+    // Usamos time(NULL) para garantir que a semente seja
+    // diferente a cada execução do programa.
+    srand(time(NULL));
+
+
+    // --- 1. CADASTRO INICIAL (Similar ao Nível Novato) ---
+    printf("--- 🗺️ Cadastro Inicial de Territórios (WAR) ---\n");
+
+    for (int i = 0; i < NUM_TERRITORIOS; i++) {
+        printf("\n--- Território %d ---\n", i + 1);
+
+        printf("Digite o nome: ");
+        fgets(mapa[i].nome, 50, stdin);
+        mapa[i].nome[strcspn(mapa[i].nome, "\n")] = '\0';
+
+        printf("Digite a cor do exército: ");
+        fgets(mapa[i].cor, 30, stdin);
+        mapa[i].cor[strcspn(mapa[i].cor, "\n")] = '\0';
+
+        printf("Digite o número de tropas: ");
+        scanf("%d", &mapa[i].tropas);
+        limpar_buffer_teclado();
+    }
+
+
+    // --- 2. FASE DE ATAQUE (Laço Interativo) ---
+    char opcao_ataque;
+    int id_atacante, id_defensor;
+
+    while (1) { // Loop infinito de batalha
+        exibir_mapa(mapa, NUM_TERRITORIOS);
+
+        printf("\nDeseja realizar um ataque? (s/n): ");
+        
+        // " %c" -> O espaço antes do %c é crucial.
+        // Ele consome qualquer 'ENTER' ('\n') deixado
+        // pelo scanf anterior, evitando a necessidade
+        // de chamar limpar_buffer_teclado() aqui.
+        scanf(" %c", &opcao_ataque);
+
+        if (opcao_ataque == 'n' || opcao_ataque == 'N') {
+            printf("Encerrando fase de ataques...\n");
+            break; // Sai do loop 'while(1)'
+        }
+        
+        // --- Escolha do Atacante ---
+        printf("Digite o ID (1-5) do território ATACANTE: ");
+        scanf("%d", &id_atacante);
+
+        // --- Escolha do Defensor ---
+        printf("Digite o ID (1-5) do território DEFENSOR: ");
+        scanf("%d", &id_defensor);
+        limpar_buffer_teclado(); // Limpa o buffer após o último scanf
+
+        // --- Validações ---
+        
+        // Ajuste de índice (Usuário digita 1-5, Vetor é 0-4)
+        id_atacante--;
+        id_defensor--;
+
+        if (id_atacante < 0 || id_atacante >= NUM_TERRITORIOS ||
+            id_defensor < 0 || id_defensor >= NUM_TERRITORIOS) {
+            printf("\nERRO: IDs inválidos! Tente novamente.\n");
+            continue; // Pula para a próxima iteração do loop
+        }
+
+        if (id_atacante == id_defensor) {
+            printf("\nERRO: Um território não pode atacar a si mesmo!\n");
+            continue;
+        }
+
+        // Validação de tropas: precisa ter ao menos 2 tropas para atacar
+        // (1 para atacar, 1 que fica no território)
+        if (mapa[id_atacante].tropas < 2) {
+            printf("\nERRO: O território atacante (%s) precisa de \n"
+                   "      pelo menos 2 tropas para iniciar um ataque!\n", 
+                   mapa[id_atacante].nome);
+            continue;
+        }
+
+        // Validação de dono (Não pode atacar um território que já é seu)
+        if (strcmp(mapa[id_atacante].cor, mapa[id_defensor].cor) == 0) {
+            printf("\nERRO: Você não pode atacar um território que já é seu!\n");
+            continue;
+        }
+
+        // Se passou em todas as validações, inicia a batalha
+        batalhar(mapa, id_atacante, id_defensor);
+        
+        printf("\nPressione ENTER para continuar...\n");
+        getchar(); // Pausa a tela
+    }
+
+
+    // --- 3. LIMPEZA DA MEMÓRIA ---
+    printf("\nJogo encerrado. Liberando memória...\n");
+    
+    // Conceito: free
+    // Libera o bloco de memória que foi alocado com calloc.
+    // Essencial para evitar "vazamento de memória" (memory leak).
+    free(mapa);
+    mapa = NULL; // Boa prática: anular o ponteiro após o free.
 
     return 0;
 }
